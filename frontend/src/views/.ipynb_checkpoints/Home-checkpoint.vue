@@ -34,6 +34,10 @@
       </select>
     </div>
 
+    <!-- <div>
+      <label for="assigned_to">Assigned To</label>
+      <input type="text" id="assigned_to" v-model="assigned_to" required />
+    </div> -->
     <!-- for assigned_to select from users -->
      <label for="assigned_to">Assigned To</label>
       <select id="assigned_to" v-model="assigned_to">
@@ -76,7 +80,7 @@ export default {
       due_date: null,
       users: [],
       currentUserId: 'current_user_id', 
-      isLoggedin: true,
+      isLoggedin: true, 
 
     };
   },

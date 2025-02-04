@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import jsonify, request
 # from flask.views import MethodView
 from flask_jwt_extended import jwt_required
@@ -7,9 +5,6 @@ from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import JWTManager
 from flask_restful import Resource
 from app.models import User, Tasks
-from app import db
-
-
 todos = []
 
 
@@ -43,23 +38,6 @@ class TodoResource(Resource):
         return jsonify({"message": "post"})
 
 
-# class to fetch all users
-class UserResource(Resource):
-    @jwt_required()
-    def get(self):
-        user_id = get_jwt_identity()
-        current_user = User.query.filter_by(id=user_id).first()
-        role = current_user.role
-
-        if role != 'manager':
-            return {"message": "You are not authorized to view users"}, 403
-
-        users = User.query.all()
-        users_list = [{"id": user.id, "username": user.username, "email": user.email, "role": user.role} for user in users]
-        
-        return {"users": users_list}
-
-
 class TaskResource(Resource):
     @jwt_required()
     def get(self):
@@ -67,7 +45,7 @@ class TaskResource(Resource):
         
         user_id = get_jwt_identity()
         current_user = User.query.filter_by(id=user_id).first()
-        role = current_user.role
+        role = current_user['role']
 
         if role not in ['manager', 'teamlead']:
             return {"message": "You are not authorized to view tasks"}, 403
@@ -77,42 +55,30 @@ class TaskResource(Resource):
         
         return {"tasks": tasks_list}
 
-
     @jwt_required()
     def post(self):
         """Create a new task (for managers or team leads)"""
         data = request.get_json()
         user_id = get_jwt_identity()
         current_user = User.query.filter_by(id=user_id).first()
-        role = current_user.role
+        role = current_user['role']
 
         if role not in ['manager', 'teamlead']:
             return {"message": "You are not authorized to create tasks"}, 403
 
-        # Convert the due_date string into a datetime.date object if it's present
-        due_date = data.get('due_date')
-        if due_date:
-            try:
-                due_date = datetime.strptime(due_date, '%Y-%m-%d').date()  # Correct use of datetime.strptime
-            except ValueError:
-                return {"message": "Invalid date format. Use YYYY-MM-DD."}, 400
-
-        # Create the new task with the updated model
-        new_task = Tasks(
+        # Create the new task
+        new_task = Task(
             title=data['title'],
             description=data['description'],
             status=data.get('status', 'assigned'),
             assigned_to=data['assigned_to'],
-            created_by=current_user.id,
-            due_date=due_date  # Use the date object here
+            created_by=current_user['id'],
+            due_date=data.get('due_date', None)
         )
         db.session.add(new_task)
         db.session.commit()
 
         return {"message": "Task created successfully", "task_id": new_task.id}, 201
-
-
-
 
     @jwt_required()
     def put(self, task_id):
@@ -120,7 +86,7 @@ class TaskResource(Resource):
         data = request.get_json()
         user_id = get_jwt_identity()
         current_user = User.query.filter_by(id=user_id).first()
-        role = current_user.role
+        role = current_user['role']
 
         # Fetch the task
         task = Task.query.get(task_id)
@@ -158,7 +124,7 @@ class TaskDetailResource(Resource):
         
         user_id = get_jwt_identity()
         current_user = User.query.filter_by(id=user_id).first()
-        role = current_user.role
+        role = current_user['role']
 
         # Check if the current user is authorized to view the task
         if task.assigned_to == current_user['id'] or role in ['manager', 'teamlead']:
@@ -187,7 +153,7 @@ class TaskStatusResource(Resource):
         
         user_id = get_jwt_identity()
         current_user = User.query.filter_by(id=user_id).first()
-        role = current_user.role
+        role = current_user['role']
 
         # Check if the user is authorized to update the task status
         if task.assigned_to == current_user['id'] or role in ['manager', 'teamlead']:
@@ -206,7 +172,7 @@ class UserRoleResource(Resource):
         user_id = get_jwt_identity()
         current_user = User.query.filter_by(id=user_id).first()
 
-        if current_user.role != 'manager':
+        if current_user['role'] != 'manager':
             return {"message": "You are not authorized to change roles"}, 403
 
         user = User.query.get(user_id)

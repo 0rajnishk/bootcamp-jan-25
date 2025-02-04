@@ -5,12 +5,9 @@ from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_restful import Api
-from flask_migrate import Migrate
-
 
 # Initialize the database object
 db = SQLAlchemy()
-
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -24,7 +21,7 @@ def create_app():
 
     # Initialize the database (SQLAlchemy)
     db.init_app(app)
-    migrate = Migrate(app, db)
+
     # Import models here to make sure tables are created
     from app.models import User  # Import models to ensure tables are registered
     
@@ -37,7 +34,7 @@ def create_app():
 
     # Import resources after app and db initialization to avoid circular imports
     from app.auth import signup_resource, login_resource
-    from app.resources import TodoResource, HelloWorldResource, UserResource, TaskResource
+    from app.resources import TodoResource, HelloWorldResource
 
     # Register the routes 
     app.add_url_rule('/signup', view_func=signup_resource, methods=['POST'])
@@ -46,9 +43,6 @@ def create_app():
     
     api.add_resource(HelloWorldResource, '/hello')
     api.add_resource(TodoResource, '/todo', '/todo_id/<int:todo_id>')
-    api.add_resource(UserResource, '/users')
-
-    api.add_resource(TaskResource, '/tasks', '/tasks/<int:task_id>')
 
 
     return app
